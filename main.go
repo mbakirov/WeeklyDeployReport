@@ -305,7 +305,7 @@ func getIssues(weekStart time.Time, weekEnd time.Time) []jira.Issue {
 
 func sendFile(xls *excelize.File, weekStart time.Time, weekEnd time.Time) {
 	domain, _ := os.LookupEnv("MAILGUN_DOMAIN")
-	key, _ := os.LookupEnv("MAILGUN_DOMAIN")
+	key, _ := os.LookupEnv("MAILGUN_KEY")
 	sender, _ := os.LookupEnv("EMAIL_SENDER")
 	recipients, _ := os.LookupEnv("RECIPIENTS")
 
@@ -323,10 +323,10 @@ func sendFile(xls *excelize.File, weekStart time.Time, weekEnd time.Time) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	_, _, err := mg.Send(ctx, message)
+	mess, id, err := mg.Send(ctx, message)
 
 	if err != nil {
-		fmt.Printf("ERROR: mailgun error:\n%s\n", err)
+		fmt.Printf("ERROR: mailgun error: %s\nmessage:%s\nid:%s\n", err, mess, id)
 		os.Exit(1)
 	}
 
