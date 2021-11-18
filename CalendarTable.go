@@ -154,7 +154,7 @@ func (file *CalendarTable) Send() {
 }
 
 func (file *CalendarTable) AddRow(rowData []string) {
-	fmt.Printf("INFO: Creating %d row...\n", file.lastRowIndex)
+	//fmt.Printf("INFO: Creating %d row...\n", file.lastRowIndex)
 
 	for i, r := range rowData {
 		err := file.excelize.SetCellValue("Sheet1", fmt.Sprintf("%s%d", file.header[i].col, file.lastRowIndex), r)

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 	"github.com/joho/godotenv"
+	"flag"
 )
 
 func init() {
@@ -16,6 +17,10 @@ func init() {
 }
 
 func main() {
+	dryRun := flag.Bool("dry-run", false, "a bool")
+	skipProjects := flag.String("skip-projects", "", "comma separated project codes")
+	flag.Parse()
+
 	weekEnd := time.Now()
 	weekStart := weekEnd.AddDate(0, 0, -7)
 	weekStart.AddDate(0, 0, 1)
@@ -60,9 +65,12 @@ func main() {
 		endDate: weekEnd,
 		releaseDateFormat: "2006-01-02",
 		releaseDateRegex: `^\d{4}-\d{2}-\d{2}$`,
+		skipProjects: *skipProjects,
 	}
 
-	for _, issue := range issues.GetIssues() {
+	issueList := issues.GetIssues()
+
+	for _, issue := range issueList {
 		xlsFile.AddRow([]string{
 			issue.GetKey(),
 			issue.GetSummary(),
@@ -79,8 +87,10 @@ func main() {
 	}
 
 	xlsFile.Write()
-
-	xlsFile.Send()
-
+	
+	if (!*dryRun) {
+		xlsFile.Send()
+	}
+	
 	os.Exit(0)
 }

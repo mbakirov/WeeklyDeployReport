@@ -1,12 +1,14 @@
 package main
 
 import (
-	"github.com/andygrunwald/go-jira"
-	"os"
-	"time"
+	//"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/andygrunwald/go-jira"
 )
 
 type VersionList struct {
@@ -39,6 +41,7 @@ type VersionsIssues struct {
 	startDate			time.Time
 	endDate				time.Time
 	issues 				[]jira.Issue
+	skipProjects		string
 }
 
 func (this *VersionsIssues) getClient() (*jira.Client) {
@@ -71,7 +74,26 @@ func (this *VersionsIssues) getClient() (*jira.Client) {
 	return this.jiraClient
 }
 
-func (this *VersionsIssues) getProjects() (*jira.ProjectList) {
+var skipProjectWasRead bool
+var skipProjects []string
+
+func (this *VersionsIssues) isProjectSkipped(key string) (bool) {
+	result := false
+
+	if (!skipProjectWasRead) {
+		skipProjects = strings.Split(this.skipProjects, ",")
+	}
+
+	for _, skipKey := range skipProjects {
+        if key == skipKey {
+            result = true
+        }
+    }
+
+	return result
+}
+
+func (this *VersionsIssues) getProjects() (jira.ProjectList) {
 	fmt.Println("INFO: Requesting projects...")
 
 	projectList, _, err := this.getClient().Project.GetList()
@@ -81,20 +103,20 @@ func (this *VersionsIssues) getProjects() (*jira.ProjectList) {
 		os.Exit(2)
 	}
 
-	var result []interface{}
+	var result jira.ProjectList
 
 	for _, project := range *projectList {
-		if (project.ProjectTypeKey != "software") {
-			fmt.Printf("INFO: Skipping project: %s\n", project.Key)
+		if (project.ProjectTypeKey != "software" || this.isProjectSkipped(project.Key)) {
+			//fmt.Printf("INFO: Skipping project: %s\n", project.Key)
 			continue
-		}
-
+		}		
+		
 		result = append(result, project)
 	}
 
-	fmt.Printf("INFO: obtained %d projects\n", len(*projectList))
+	fmt.Printf("INFO: obtained %d projects\n", len(result))
 
-	return projectList
+	return result
 }
 
 func (this *VersionsIssues) getProjectVersions(projectKey string) ([]string) {
@@ -120,14 +142,14 @@ func (this *VersionsIssues) getProjectVersions(projectKey string) ([]string) {
 		matched, _ := regexp.MatchString(this.releaseDateRegex, version.ReleaseDate)
 
 		if !matched {
-			fmt.Printf("\nINFO: skipping version %s (%s) - date not match...", version.ID, projectKey)
+			//fmt.Printf("\nINFO: skipping version %s (%s) - date not match...", version.ID, projectKey)
 			continue
 		}
 
 		releaseDate, _ := time.Parse(this.releaseDateFormat, version.ReleaseDate)
 
 		if releaseDate.Before(this.startDate) || releaseDate.After(this.endDate) {
-			fmt.Printf("\nINFO: skipping version %s (%s) - release date not match... ", version.ID, projectKey)
+			//fmt.Printf("\nINFO: skipping version %s (%s) - release date not match... ", version.ID, projectKey)
 			continue
 		}
 
@@ -143,7 +165,7 @@ func (this *VersionsIssues) getVersions() ([]string) {
 	releasedVersions := []string{}
 	projectList := this.getProjects()
 
-	for _, project := range *projectList {
+	for _, project := range projectList {
 		releasedVersions = append(releasedVersions, this.getProjectVersions(project.Key)...)
 	}
 
