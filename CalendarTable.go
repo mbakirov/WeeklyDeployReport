@@ -1,7 +1,5 @@
 package main
 
-// excelize https://medium.com/cloud-native-the-gathering/using-golang-to-create-and-read-excel-files-7e0c10a31583
-
 import (
 	"fmt"
 	"os"
@@ -154,7 +152,9 @@ func (file *CalendarTable) Send() {
 }
 
 func (file *CalendarTable) AddRow(rowData []string) {
-	//fmt.Printf("INFO: Creating %d row...\n", file.lastRowIndex)
+	if (file.debugMode) {
+		fmt.Printf("INFO: Creating %d row...\n", file.lastRowIndex)
+	}
 
 	for i, r := range rowData {
 		err := file.excelize.SetCellValue("Sheet1", fmt.Sprintf("%s%d", file.header[i].col, file.lastRowIndex), r)
